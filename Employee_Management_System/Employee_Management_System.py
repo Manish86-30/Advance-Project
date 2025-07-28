@@ -1,6 +1,5 @@
 # Employee Management System....
 
-# Employee Management System....
 
 import mysql.connector
 
