@@ -1,6 +1,6 @@
 # Employee Management System....
 
-
+from decimal import Decimal
 import mysql.connector
 
 try:
@@ -23,11 +23,15 @@ except:
 cursor = conn.cursor()
 
 
-def check_employee(employee_id,):
-    query = "SELECT * FROM employee WHERE id = %s"
-    cursor.execute(query, (employee_id,))
-    result = cursor.fetchone()
-    return result is not None
+def check_employee(employee_id):
+    try:
+        query = "SELECT * FROM employee WHERE id = %s"
+        cursor.execute(query, (employee_id,))  # ✅ note the comma
+        result = cursor.fetchone()
+        return result is not None
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+        return False
 
 
 def add_employee():
@@ -70,25 +74,29 @@ def remove_employee():
         print(f"Error: {err}")
         conn.rollback()
 
+
 def promote_employee():
     id = input("Enter the student id: ")
+
     if not check_employee(id):
         print("Student Already Exists. Please Try Again!!")
         return
-    
-    try:
-        Amount = float(input("Enter Increase Salary:- "))
 
-        num_select = "select salary from employee where id=%s"
+    try:
+        Amount = Decimal(input("Enter Increase Salary:- ").strip())
+
+        num_select = "SELECT salary FROM employee WHERE id=%s"
         cursor.execute(num_select, (id,))
-        current_salary = cursor.fetchone()[0]
+        current_salary = cursor.fetchone()[0]   # this is already Decimal
+
         new_salary = current_salary + Amount
 
-        num_update = "update employee set salary=%s where id=%s"
+        num_update = "UPDATE employee SET salary=%s WHERE id=%s"
         cursor.execute(num_update, (new_salary, id))
         conn.commit()
+
         print("Employee Promoted Successfully!!")
-    
+
     except (ValueError, mysql.connector.Error) as e:
         print(f"Error: {e}")
         conn.rollback()
@@ -96,9 +104,15 @@ def promote_employee():
 
 def display_employee():
     try:
-        num = "select * from employee"
-        cursor.execute(num)
+        query = "SELECT id, name, post, salary FROM employee"
+        cursor.execute(query)
+
         employees = cursor.fetchall()
+
+        if not employees:
+            print("No employees found.")
+            return
+
         for employee in employees:
             print("Employee Id:- ", employee[0])
             print("Employee Name:- ", employee[1])
@@ -110,32 +124,39 @@ def display_employee():
         print(f"Error: {err}")
 
 
-
 def menu():
     while True:
         print("\nWelcome to Employee Management Record!!")
         print("Press: ")
-        print("1 to Add Employee")
-        print("2 to Remove Employee")
-        print("3 to Promote Employee")
-        print("4 to Display Employees")
-        print("5 to Exit")
+        print("1 to Check Employee")
+        print("2 to Add Employee")
+        print("3 to Remove Employee")
+        print("4 to Promote Employee")
+        print("5 to Display Employees")
+        print("6 to Exit")
 
         choice = input("Enter Your Choice:- ")
-
+        
         if choice == '1':
+            emp_id = input("Enter Employee ID to check: ")
+            if check_employee(emp_id):
+                print("Employee exists.")
+            else:
+                print("Employee does not exist.")
+
+        if choice == '2':
             add_employee()
 
-        elif choice == '2':
+        elif choice == '3':
             remove_employee()
 
-        elif choice == '3':
+        elif choice == '4':
             promote_employee()
 
-        elif choice == '4':
+        elif choice == '5':
             display_employee()
 
-        elif choice == '5':
+        elif choice == '6':
             print("Existing the program. Good Byee!!")
             break
         else:
